@@ -5,9 +5,7 @@
  *
  * @author Perepelitsa Vladimir <vladimirperepelitsa101@gmail.com>
  * 
- * DumpToMigration класс для поднятия базы данных из дампа с помощью миграций Yii
- *
- * Данный класс позволяет поднимать базу данных из миграций и заполнять необходимые таблицы
+ * DumpToMigration command for creation clean dump from migrations Yii
  *
  */
 
@@ -28,9 +26,10 @@ class DumptomigrationCommand extends CConsoleCommand
 
     /**
      * Получаем из файла конфигов запросы создания таблиц, заполнения таблиц, и создания внешних ключей
-     * $path - путь к файлу с дампом
-     * $migration_table - имя таблицы миграций
-     * $inserts_array - массив имен таблиц которые необходимо заполнить
+     * Get requests for creation tables, write data to tables and keys creation
+     * $path - path to file with dump
+     * $migration_table - table with migrations
+     * $inserts_array - massive with table name to be filled
      */
     public function actionIndex()
     {
@@ -39,15 +38,15 @@ class DumptomigrationCommand extends CConsoleCommand
         $path = Yii::app()->getBasePath().'/..'.$config['path'];
         $migration_table = $config['migration_table'];
         $this->inserts_array = $config['inserts_array'];
-        $file = fopen($path, "r"); //открываем файл с дампом базы
-        $filesize = filesize($path); //определяем размер файла
-        $chunk_size = 31457280; //задаем размер куска которым будем тянуть информацию
+        $file = fopen($path, "r"); //open file with base database
+        $filesize = filesize($path); //get file size
+        $chunk_size = 31457280; //chunk size
         $ceils = ceil($filesize/$chunk_size);
-        $read = 0; //начальный размер
+        $read = 0; //begin size
         $last_chunk = '';
         $tables = [];
         $this->create_insert_file();
-        while($read < $ceils){ //выводим информацию из файла по кускам
+        while($read < $ceils){ //print file chunks
             $sql = fread($file, $chunk_size);
             if(strpos($sql, "INSERT INTO") !== FALSE){
                 $this->prepare_inserts($sql, '');
@@ -55,8 +54,8 @@ class DumptomigrationCommand extends CConsoleCommand
             if(!empty($last_chunk)){
                 $sql = $last_chunk.$sql;
             }
-            if(strpos($sql, "CREATE TABLE") !== FALSE){ //делим кусок на таблицы
-                $prepare_tables = $this->prepare_tables($sql, $migration_table, TRUE); //подготавливаем таблицы к записи в миграции
+            if(strpos($sql, "CREATE TABLE") !== FALSE){ //get tables from chunk
+                $prepare_tables = $this->prepare_tables($sql, $migration_table, TRUE); //prepare tables for writing
                 $last_chunk = $prepare_tables['sql_last'];
                 $tables = array_merge($tables, $prepare_tables['tables']);
             } 
@@ -73,7 +72,7 @@ class DumptomigrationCommand extends CConsoleCommand
     }
     
     /**
-     * Подготавливаем таблицы для записи в файл мигрвций
+     * Prepare tables to writing to migration file
      * @param type $sql
      * @param type $migration_table
      * @param type $last
@@ -111,7 +110,7 @@ class DumptomigrationCommand extends CConsoleCommand
     }
     
     /**
-     * Создаем файл миграций с таблицами
+     * Create migration file with tables
      * @param type $queries
      * @param type $name
      */
@@ -124,7 +123,7 @@ class DumptomigrationCommand extends CConsoleCommand
     }
     
     /**
-     * Получаем имя таблицы из sql запроса
+     * Get table name from sql query
      * @param type $row
      * @return type
      */
@@ -135,7 +134,7 @@ class DumptomigrationCommand extends CConsoleCommand
     }
     
     /**
-     * Подготавливаем тело таблицы для записи в файл миграций
+     * Prepare table body for writing to migration file
      * @param type $rows
      * @param type $table_name
      * @return type
@@ -175,7 +174,7 @@ class DumptomigrationCommand extends CConsoleCommand
     }
     
     /**
-     * Подготавливаем ключи для записи в файл миграций
+     * Prepare keys to writing migration file
      * @param type $sql
      * @param type $table_name
      * @param type $unique
@@ -195,7 +194,7 @@ class DumptomigrationCommand extends CConsoleCommand
     }
     
     /**
-     * Подготавливаем constraints для записи в файл миграций
+     * Prepare constraints to writing migration file
      * @param type $sql
      * @param type $table_name
      * @return string
@@ -220,7 +219,7 @@ class DumptomigrationCommand extends CConsoleCommand
     }
     
     /**
-     * Забираем последний ключ и дописываем в массив с остальными ключами
+     * Get last key and write it to array with other key
      * @param type $sql
      */
     public function last_keys($sql){
@@ -246,7 +245,7 @@ class DumptomigrationCommand extends CConsoleCommand
     }
     
     /**
-     * Подготавливаем данные для заполнения таблиц
+     * Prepare date for writing to table
      * @param type $sql
      * @param type $condition
      */
@@ -290,7 +289,7 @@ class DumptomigrationCommand extends CConsoleCommand
     }
     
     /**
-     * Создаем файл миграций с данными таблиц
+     * Create migration file with table data
      */
     public function create_insert_file(){
         $create_tables_file = "m".date("ymd")."_000002_references_".$this->file_num;
@@ -301,7 +300,7 @@ class DumptomigrationCommand extends CConsoleCommand
     }
     
     /**
-     * Закрываем файл миграций
+     * Close migration file
      */
     public function create_end_file(){
         $create_tables_file = "m".date("ymd")."_000002_references_".$this->file_num;
